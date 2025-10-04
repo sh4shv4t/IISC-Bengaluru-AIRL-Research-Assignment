@@ -1,6 +1,6 @@
-# AIRL Internship Coding Assignment Submission
+# AIRL Research Internship Assessment
 
-This repository contains my solutions for the Vision Transformer (ViT) and Text-Driven Image Segmentation assignments for the AIRL Research Internship.
+This repository contains my submission for the AIRL research internship assessment. It features a from-scratch implementation of a Vision Transformer (ViT) on CIFAR-10 and a text-driven video segmentation pipeline using Grounding DINO and the Segment Anything Model (SAM).
 
 ## 📝 Table of Contents
 * [Question 1: Vision Transformer on CIFAR-10](#question-1-vision-transformer-on-cifar-10)
@@ -18,22 +18,22 @@ This repository contains my solutions for the Vision Transformer (ViT) and Text-
 
 ## Question 1: Vision Transformer on CIFAR-10
 
-This section covers the implementation of a Vision Transformer for image classification on the CIFAR-10 dataset, as detailed in `q1.ipynb`.
+This notebook (`q1.ipynb`) contains a from-scratch implementation of the Vision Transformer architecture, trained and evaluated on the CIFAR-10 dataset with the objective of maximizing test accuracy.
 
 ### How to Run (Q1)
 1.  Open `q1.ipynb` in Google Colab.
-2.  Ensure the runtime is set to use a GPU accelerator.
-3.  Run all cells from top to bottom to install dependencies, load data, train the model, and evaluate its final performance.
+2.  Select a GPU-accelerated runtime (`T4` or similar).
+3.  Execute all cells sequentially from top to bottom.
 
 ### Best Model Configuration
-The configuration below achieved the final test accuracy.
+The final reported accuracy was achieved using the following configuration:
 
 | Hyperparameter      | Value                |
 | ------------------- | -------------------- |
 | Patch Size          | 4x4 |
 | Embedding Dimension | 192 |
-| Number of Heads (MHSA)| 8 |
-| Number of Layers    | 8 |
+| Transformer Layers (Depth) | 8 |
+| MHSA Heads | 8 |
 | MLP Hidden Dimension| 768 |
 | Optimizer           | AdamW |
 | Learning Rate       | 3e-4 |
@@ -41,51 +41,51 @@ The configuration below achieved the final test accuracy.
 | Batch Size          | 128 |
 | Training Epochs     | 50 |
 | Augmentations       | RandomCrop, RandomHorizontalFlip, RandAugment |
-| Training Techniques | MixUp (alpha=0.8), Label Smoothing (0.1), Cosine LR Scheduler with Warmup |
+| Regularization      | MixUp (α=0.8), Label Smoothing (ε=0.1), Cosine LR Scheduler with Warmup |
 
 ### Results
-The final classification accuracy on the CIFAR-10 test set is reported below.
-
 | Metric                          | Score     |
 | ------------------------------- | --------- |
 | **Overall Test Accuracy (%)** | **78.54%**|
 
 ### (Bonus) Analysis
-To maximize performance on CIFAR-10, I implemented several modern training techniques that are crucial for training Vision Transformers effectively on smaller datasets:
-* **Strong Augmentation**: I used `RandAugment` in addition to standard crops and flips. This introduces significant diversity into the training data, which acts as a strong regularizer and is essential for helping ViTs generalize well.
-* **MixUp & Label Smoothing**: By linearly interpolating pairs of images and their labels (MixUp) and softening the target labels (Label Smoothing), the model is encouraged to learn smoother decision boundaries and reduce overconfidence, leading to better calibration and accuracy.
-* **AdamW and Cosine Scheduler**: Instead of a simple Adam optimizer, I used AdamW combined with a cosine annealing scheduler with a warmup period. This combination provides more stable training and better final convergence for Transformer architectures.
+My strategy focused on implementing modern best practices for training ViTs, which are notoriously data-hungry, on a small-scale dataset like CIFAR-10. This resulted in an **11.22% accuracy improvement** over a baseline configuration, from 67.32% to 78.54%.
+
+* **Architectural Scaling**: I methodically increased the model's capacity by expanding the embedding dimension (128 → 192) and adding more Transformer layers (6 → 8). This allowed the network to capture more complex inter-patch relationships.
+* **Advanced Regularization**: To combat overfitting from the increased model capacity, I employed a suite of strong regularization techniques:
+    * **Data Augmentation**: `RandAugment` was critical for artificially expanding the dataset's diversity.
+    * **MixUp & Label Smoothing**: These techniques prevent the model from becoming overconfident in its predictions by encouraging smoother decision boundaries.
+* **Optimizer & Schedule**: I used the `AdamW` optimizer, which decouples weight decay from the gradient update, along with a **Cosine Annealing scheduler** and a warmup phase. This combination is highly effective for stabilizing Transformer training and finding better optima.
+* **Sufficient Training**: The number of training epochs was increased (20 → 50) to ensure the model had sufficient iterations to converge properly with the given learning rate schedule.
 
 ---
 
 ## Question 2: Text-Driven Image & Video Segmentation
 
-This section covers the implementation of text-prompted segmentation on a single image and the bonus video extension, as detailed in `q2.ipynb`.
+This notebook (`q2.ipynb`) implements a pipeline that uses a natural language prompt to perform segmentation on a single image and extends this capability to video.
 
 ### How to Run (Q2)
 1.  Open `q2.ipynb` in Google Colab.
-2.  Ensure the runtime is set to use a GPU accelerator.
-3.  Run all cells from top to bottom. The notebook will download a sample video, prompt the user for a text input, process the video frame-by-frame, and save the result as `output_video_final.mp4`.
+2.  Select a GPU-accelerated runtime.
+3.  Run all cells sequentially. The notebook will download a sample video, prompt for a text input, process the video, and save the result as `output_video_final.mp4`.
 
 ### Pipeline Description
-My approach for text-prompted segmentation uses a two-stage pipeline combining a text-to-box model with a promptable segmentation model.
-1.  **Load Media**: An image or video frame is loaded.
-2.  **Accept Text Prompt**: The user inputs a text string describing the object of interest (e.g., "dog").
-3.  **Generate Region Seeds**: I use the **`IDEA-Research/grounding-dino-base`** model to interpret the text prompt and generate bounding box coordinates (region seeds) for the target object.
-4.  **Segment with SAM**: These bounding box seeds are fed into the **`facebook/sam-vit-base`** model.
-5.  **Display Mask**: SAM outputs a high-quality segmentation mask, which is then overlaid on the original image or frame.
+The pipeline uses a two-stage, prompt-based approach:
+1.  **Text-to-Box Generation**: The user provides a text prompt (e.g., "dog"). This prompt is fed to the **`IDEA-Research/grounding-dino-base`** model, which identifies and generates bounding box coordinates for the corresponding object in the input image or frame.
+2.  **Box-to-Mask Generation**: The generated bounding boxes are then used as prompts for the **`facebook/sam-vit-base`** model. SAM uses these boxes as spatial cues to produce a precise, high-quality segmentation mask for the target object.
 
 ### (Bonus) Video Extension
-I extended the pipeline to perform text-driven video object segmentation. The approach is as follows:
-1.  **Initial Detection**: Grounding DINO runs on the initial frames of the video to find the object specified by the text prompt.
-2.  **Tracking-by-Detection**: Once an initial bounding box is found, it is saved. This **same static box** is then used as the prompt for SAM on all subsequent frames. This allows for tracking the object as long as it stays within the initial detection area.
-3.  **Mask Generation & Output**: SAM generates a mask for each frame, and the masked frames are compiled into a final output video.
+The pipeline was successfully extended to perform text-driven video object segmentation.
+1.  **Initial Detection**: Grounding DINO is run on the first few frames of the video until the object specified by the text prompt is successfully detected.
+2.  **Tracking-by-Detection**: The initial bounding box is then held static and used as the sole prompt for SAM on all subsequent frames of the video clip.
+3.  **Mask Generation & Output**: SAM generates a mask for each frame based on this initial box, and the masked frames are compiled into a final output video.
 
+For the bonus part of the question- 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1RrZmArab08j2ua7DbFp0PCPpwf_JaDNY?usp=sharing)
 
 
 ### Limitations
-The primary limitation of this pipeline is its simple approach to tracking:
-* **Static Bounding Box**: The core weakness is that the bounding box from the initial detection is re-used for all subsequent frames. As a result, the mask accuracy degrades significantly when the object undergoes **fast motion** or moves outside its initial detection area.
-* **Detection Dependency**: The entire process is contingent on a successful initial detection by Grounding DINO. If the object is not found in the first few frames, the tracking fails.
-* **Ambiguity**: Ambiguous prompts (e.g., "the person") could cause the initial detection to lock onto the wrong object if multiple instances are present. A more advanced solution would incorporate mask propagation or a more sophisticated tracking algorithm to update the prompt for SAM on a frame-by-frame basis.
+The primary limitation lies in the simple tracking-by-detection strategy:
+* **Static Bounding Box**: The core weakness is that the initial bounding box is not updated frame-to-frame. As I observed, this causes the mask to become **inaccurate during fast object motion** or when the object moves significantly from its initial position.
+* **Detection Dependency**: The entire process is contingent on a successful initial detection by Grounding DINO. If the object isn't found in the first few frames, the tracking cannot start.
+* **Ambiguity**: Ambiguous prompts could cause the initial detection to lock onto the wrong object. A more advanced solution would incorporate a dedicated tracking algorithm or use mask propagation from frame t-1 as an additional prompt for frame t.
