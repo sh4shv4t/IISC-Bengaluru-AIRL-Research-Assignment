@@ -81,8 +81,8 @@ I extended the pipeline to perform text-driven video object segmentation. The ap
 2.  **Tracking-by-Detection**: Once an initial bounding box is found, it is saved. This **same static box** is then used as the prompt for SAM on all subsequent frames. This allows for tracking the object as long as it stays within the initial detection area.
 3.  **Mask Generation & Output**: SAM generates a mask for each frame, and the masked frames are compiled into a final output video.
 
-Link to the colab notebook for the bonus part of the question is - 
-`[Link to Bonus part of Q2](https://colab.research.google.com/drive/1RrZmArab08j2ua7DbFp0PCPpwf_JaDNY?usp=sharing)`
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1RrZmArab08j2ua7DbFp0PCPpwf_JaDNY?usp=sharing)
+
 
 ### Limitations
 The primary limitation of this pipeline is its simple approach to tracking:
